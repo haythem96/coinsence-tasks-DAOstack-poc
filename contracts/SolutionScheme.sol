@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.2;
 
 import "@daostack/infra/contracts/votingMachines/ProposalExecuteInterface.sol";
 import "@daostack/arc/contracts/universalSchemes/UniversalScheme.sol";

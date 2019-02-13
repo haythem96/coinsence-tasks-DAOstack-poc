@@ -1,5 +1,5 @@
 // This is just a mock
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.2;
 
 
 contract Task {
