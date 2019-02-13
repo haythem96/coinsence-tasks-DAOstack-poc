@@ -2,7 +2,7 @@
 pragma solidity ^0.4.24;
 
 
-contract Allocate {
+contract Task {
 
     event TaskCreated(bytes32 _taskId, uint256 _coinsAmount);
     event SolutionValidated(bytes32 _taskId, bytes32 _solutionId);

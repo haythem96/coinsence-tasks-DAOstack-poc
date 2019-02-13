@@ -13,9 +13,9 @@ import "./TaskInterface.sol";
 /**
  * @title A universal scheme for proposing coins amount for a task
  * @dev A memmber can propose the space a task solution to send.
- * if accepted the task will be confirmed by the organization
+ * if accepted the coins for that task will be sent to the member
  */
-contract AllocateScheme is UniversalScheme, VotingMachineCallbacks, ProposalExecuteInterface {
+contract SolutionScheme is UniversalScheme, VotingMachineCallbacks, ProposalExecuteInterface {
 
     //allocate contract address on the ethereum blockchain (testnet or mainnet)
     address public constant TASK = 0x802388aB7eF5c1dCAFE4e161C89431417e35551c; //not a valid TASK contract address
@@ -84,15 +84,15 @@ contract AllocateScheme is UniversalScheme, VotingMachineCallbacks, ProposalExec
     }
 
     /**
-    * @dev Registers an Avatar as a task issuer
-    * @param _avatar the avatar of the organization to register to task
+    * @dev Registers a task for the space(avatar)
+    * @param _avatar the avatar of the space to register to task
     * @param _name the task name
     * @param _coins coins amount to allocate for task
     */
     function registerTask(address payable _avatar, string memory _name, uint256 _coins) public {      
         ControllerInterface controller = ControllerInterface(Avatar(_avatar).owner());
-        // Sends a call to the Peepeth contract to create an account.
-        // The call will be made from the avatar address such that when received by the Peepeth contract, the msg.sender value will be the avatar's address
+        // Sends a call to the Task contract to issue a task
+        // The call will be made from the avatar address such that when received by the Task contract, the msg.sender value will be the avatar's address
         controller.genericCall(
             taskContract, 
             abi.encodeWithSelector(TaskInterface(taskContract).createTask.selector, keccak256(abi.encodePacked(_name)), 1000, false),
@@ -156,8 +156,8 @@ contract AllocateScheme is UniversalScheme, VotingMachineCallbacks, ProposalExec
             SolutionProposal memory proposal = spacesProposals[avatar][_taskId][_proposalId];
             
             ControllerInterface controller = ControllerInterface(Avatar(avatar).owner());
-            // Sends a call to the Peepeth contract to post a new peep.
-            // The call will be made from the avatar address such that when received by the Peepeth contract, the msg.sender value will be the avatar's address
+            // Sends a call to the Task contract to send coins to proposer
+            // The call will be made from the avatar address such that when received by the Task contract, the msg.sender value will be the avatar's address
             controller.genericCall(taskContract, abi.encodeWithSelector(TaskInterface(taskContract).validateSolution.selector, _taskId, _proposalId), Avatar(avatar));
             
             // Send coins to the proposer of the Peep.
