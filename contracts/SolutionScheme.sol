@@ -46,6 +46,9 @@ contract SolutionScheme is UniversalScheme, VotingMachineCallbacks, ProposalExec
     // A mapping from the space (Avatar) address to the saved task solution proposals of the space:
     mapping(address=>mapping(bytes32=>mapping(bytes32=>SolutionProposal))) public spacesProposals;
 
+    //A mapping frm a prposal to the task
+    mapping(bytes32=>bytes32) public proposalTask;
+
     // A mapping from hashes to parameters (use to store a particular configuration on the controller)
     mapping(bytes32 => Parameters) public parameters;
 
@@ -126,6 +129,7 @@ contract SolutionScheme is UniversalScheme, VotingMachineCallbacks, ProposalExec
             solutionHash: _solutionHash
         });
         spacesProposals[address(_avatar)][_taskId][solutionId] = proposal;
+        proposalTask[solutionId] = _taskId;
 
         emit NewSolutionProposal(
             address(_avatar),
@@ -142,7 +146,7 @@ contract SolutionScheme is UniversalScheme, VotingMachineCallbacks, ProposalExec
     * @param _proposalId the ID of the voting in the voting machine
     * @param _param a parameter of the voting result, 1 yes and 2 is no.
     */
-    function executeProposal(address _coinAddress, bytes32 _taskId, bytes32 _proposalId, int _param)  public returns(bool) {
+    function executeProposal(bytes32 _proposalId, int _param)  public returns(bool) {
         address payable avatar = address(proposalsInfo[_proposalId].avatar);
 
         // Check the caller is indeed the voting machine:
@@ -151,24 +155,27 @@ contract SolutionScheme is UniversalScheme, VotingMachineCallbacks, ProposalExec
             "Only the voting machine can execute proposal"
         );
 
+        //get the task id realted to the proposal
+        bytes32 taskId = proposalTask[_proposalId];
+
         // Check if vote was successful:
         if (_param == 1) {
-            SolutionProposal memory proposal = spacesProposals[avatar][_taskId][_proposalId];
+            SolutionProposal memory proposal = spacesProposals[avatar][taskId][_proposalId];
             
             ControllerInterface controller = ControllerInterface(Avatar(avatar).owner());
             // Sends a call to the Task contract to send coins to proposer
             // The call will be made from the avatar address such that when received by the Task contract, the msg.sender value will be the avatar's address
-            controller.genericCall(taskContract, abi.encodeWithSelector(TaskInterface(taskContract).validateSolution.selector, _taskId, _proposalId), Avatar(avatar));
+            controller.genericCall(taskContract, abi.encodeWithSelector(TaskInterface(taskContract).validateSolution.selector, taskId, _proposalId), Avatar(avatar));
             
             // Send coins to the proposer of the Peep.
-            IERC20 erc20Coin = IERC20(_coinAddress);
+            IERC20 erc20Coin = IERC20(address(0));
             //TODO: replace fixed coin number with a variable
             require(
                 ControllerInterface(Avatar(avatar).owner()).externalTokenTransferFrom(erc20Coin, avatar, proposal.proposer, 10, Avatar(avatar)),
                 "Failed to mint reputation to proposer"
             );
         } else {
-            delete spacesProposals[avatar][_taskId][_proposalId];
+            delete spacesProposals[avatar][taskId][_proposalId];
         }
 
         emit ProposalExecuted(avatar, _proposalId, _param);
